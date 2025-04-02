@@ -6,6 +6,7 @@ import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
 import { AddressModule } from './address/address.module';
 import { DeveloperModule } from './developer/developer.module';
+import { ProjectModule } from './project/project.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { DeveloperModule } from './developer/developer.module';
     AuthModule,
     AddressModule,
     DeveloperModule,
+    ProjectModule,
   ],
   controllers: [],
   providers: [],
