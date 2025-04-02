@@ -55,7 +55,7 @@ export class AdminService {
   }
 
   // Admin yaratish
-  async create(createAdminDto: CreateAdminDto, adminId:string): Promise<Admin> {
+  async create(createAdminDto: CreateAdminDto, adminId: string) {
     const { email, phone_number, password } = createAdminDto;
 
     // Admin mavjudligini tekshirish
@@ -106,7 +106,7 @@ export class AdminService {
     newAdmin.hashed_refresh_token = await hash(refresh_token);
 
     await newAdmin.save(); // Refresh tokenni yangilab saqlash
-    return newAdmin;
+    return createApiResponse(200, 'Админ успешно создан', newAdmin);
   }
 
   // Barcha adminlarni olish
@@ -151,7 +151,7 @@ export class AdminService {
     // Adminni userId ga mos kelmasligini tekshirish
     const filteredAdmins = admins.filter((u) => u._id.toString() !== adminId);
 
-    return createApiResponse(200, 'Admins received successfully', {
+    return createApiResponse(200, 'Админы получены успешно', {
       payload: filteredAdmins,
       total: totalCount,
       limit,
@@ -161,7 +161,13 @@ export class AdminService {
 
   // Bir adminni topish
   async findOne(id: string) {
-    return this.adminModel.findById(id).exec();
+    const admin = await this.adminModel.findById(id).exec(); // Await the promise to resolve
+
+    if (!admin) {
+      throw new NotFoundException('Админ с таким ID не найден');
+    }
+
+    return createApiResponse(200, 'Админ найден', admin); // Return the found admin
   }
 
   // Adminni yangilash
@@ -169,7 +175,7 @@ export class AdminService {
     const admin = await this.findOne(id);
 
     if (!admin) {
-      throw new BadRequestException('Admin topilmadi!');
+      throw new BadRequestException('Админ не найден');
     }
 
     // Adminni yangilash
@@ -180,20 +186,27 @@ export class AdminService {
 
   // Adminni o'chirish
   async remove(id: string) {
+    const admin = await this.findOne(id);
+
+    if (!admin) {
+      throw new BadRequestException('Админ не найден');
+    }
+
     await this.adminModel.findByIdAndDelete(id).exec();
+    return createApiResponse(200, 'Админ успешно удален', null);
   }
 
   async activateAdmin(link: string, res: Response) {
     try {
       const admin = await this.adminModel.findOne({ activation_link: link });
       if (!admin) {
-        return res.status(400).send({ message: 'Foydalanuvchi topilmadi!' });
+        return res.status(400).send({ message: 'Пользователь не найден!' });
       }
 
       if (admin.is_active) {
         return res
           .status(400)
-          .send({ message: 'Foydalanuvchi allaqachon faollashtirilgan.' });
+          .send({ message: 'Пользователь уже активирован.' });
       }
 
       admin.is_active = true;
@@ -201,7 +214,7 @@ export class AdminService {
 
       res.send({
         is_active: admin.is_active,
-        message: 'Foydalanuvchi muvaffaqiyatli faollashtirildi.',
+        message: 'Пользователь успешно активирован.',
       });
     } catch (error) {
       // console.log(error);

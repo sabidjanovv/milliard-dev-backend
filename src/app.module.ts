@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module';
 import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
 import { AddressModule } from './address/address.module';
+import { DeveloperModule } from './developer/developer.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AddressModule } from './address/address.module';
     MailModule,
     AuthModule,
     AddressModule,
+    DeveloperModule,
   ],
   controllers: [],
   providers: [],
