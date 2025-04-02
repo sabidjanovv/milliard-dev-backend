@@ -13,7 +13,7 @@ import { UpdateDeveloperDto } from './dto/update-developer.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Developer } from './schemas/developer.schema'; // Developer schema
 
-@ApiTags('Разработчики') // Grouping in Swagger
+@ApiTags('Developers') // Grouping in Swagger
 @Controller('developers')
 export class DeveloperController {
   constructor(private readonly developerService: DeveloperService) {}
