@@ -41,11 +41,11 @@ export class CreatorGuard implements CanActivate {
     }
 
     if (payload.is_active !== true) {
-      throw new ForbiddenException('Admin is not active!');
+      throw new ForbiddenException('Admin faol emas!');
     }
 
     if (payload.is_creator !== true) {
-      throw new ForbiddenException('You do not have access to this');
+      throw new ForbiddenException('Sizga ruxsat etilmagan!');
     }
 
     return true;

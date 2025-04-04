@@ -12,7 +12,7 @@ export class Address {
   @Prop({ type: String })
   description?: string;
 
-  @Prop({ type: String, required: true, match: /^7\d{10}$/ })
+  @Prop({ type: String, required: true})
   phone_number: string;
 
   @Prop({ type: String, required: true })
@@ -36,18 +36,18 @@ export const AddressSchema = SchemaFactory.createForClass(Address);
 AddressSchema.pre('save', function (next) {
   if (!this.createdAt) {
     this.set({
-      createdAt: moment().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss'),
+      createdAt: moment().tz('Asia/Tashkent').format('YYYY-MM-DD HH:mm:ss'),
     });
   }
   this.set({
-    updatedAt: moment().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss'),
+    updatedAt: moment().tz('Asia/Tashkent').format('YYYY-MM-DD HH:mm:ss'),
   });
   next();
 });
 
 AddressSchema.pre('findOneAndUpdate', function (next) {
   this.set({
-    updatedAt: moment().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss'),
+    updatedAt: moment().tz('Asia/Tashkent').format('YYYY-MM-DD HH:mm:ss'),
   });
   next();
 });

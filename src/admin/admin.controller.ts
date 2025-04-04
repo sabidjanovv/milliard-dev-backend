@@ -40,9 +40,8 @@ export class AdminController {
   @ApiOperation({ summary: 'Admin yaratish' })
   @ApiResponse({ status: 201, description: 'Admin muvaffaqiyatli yaratildi.' })
   @ApiResponse({ status: 400, description: 'Xatolik yuz berdi.' })
-  create(@Body() createAdminDto: CreateAdminDto, @Request() req) {
-    const adminId = req.user.id;
-    return this.adminService.create(createAdminDto, adminId);
+  create(@Body() createAdminDto: CreateAdminDto) {
+    return this.adminService.create(createAdminDto);
   }
 
   @Get()

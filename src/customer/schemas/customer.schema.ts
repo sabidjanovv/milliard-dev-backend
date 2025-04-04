@@ -62,18 +62,18 @@ CustomerSchema.index(
 CustomerSchema.pre('save', function (next) {
   if (!this.createdAt) {
     this.set({
-      createdAt: moment().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss'),
+      createdAt: moment().tz('Asia/Tashkent').format('YYYY-MM-DD HH:mm:ss'),
     });
   }
   this.set({
-    updatedAt: moment().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss'),
+    updatedAt: moment().tz('Asia/Tashkent').format('YYYY-MM-DD HH:mm:ss'),
   });
   next();
 });
 
 CustomerSchema.pre('findOneAndUpdate', function (next) {
   this.set({
-    updatedAt: moment().tz('Europe/Moscow').format('YYYY-MM-DD HH:mm:ss'),
+    updatedAt: moment().tz('Asia/Tashkent').format('YYYY-MM-DD HH:mm:ss'),
   });
   next();
 });

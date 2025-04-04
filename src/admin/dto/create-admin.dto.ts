@@ -9,7 +9,7 @@ export class CreateAdminDto {
   @IsString({ message: 'Isming satr bo‘lishi kerak' })
   full_name: string;
   @ApiProperty({
-    example: 'admin@example.com',
+    example: 'admin@gmail.com',
     description: 'Adminning email manzili',
   })
   @IsEmail({}, { message: 'Noto‘g‘ri email formati' })

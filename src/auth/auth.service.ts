@@ -18,12 +18,15 @@ import { Request } from 'express';
 import { AdminService } from '../admin/admin.service';
 import { Admin, AdminDocument } from '../admin/schemas/admin.schema';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
+import * as uuid from 'uuid';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
+  private isCreatorChecked = false;
   constructor(
     private readonly jwtService: JwtService,
-    private readonly adminService: AdminService,
+    private readonly mailService: MailService,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
   ) {}
 
@@ -32,11 +35,23 @@ export class AuthService {
       ...createAdminDto,
       adminId,
     });
+    const hashedPassword = await hash(createAdminDto.password);
 
     const { access_token, refresh_token } = await this.generateTokens(admin);
     const hashedRefreshtoken = await hash(refresh_token);
+    const activation_link = uuid.v4();
     admin.hashed_refresh_token = hashedRefreshtoken;
+    admin.hashed_password = hashedPassword;
+    admin.activation_link = activation_link;
 
+    let is_creator = false;
+
+    if (!this.isCreatorChecked) {
+      const creatorAdmin = await this.adminModel.findOne({ is_creator: true });
+      is_creator = !creatorAdmin;
+      this.isCreatorChecked = true;
+    }
+    admin.is_creator = is_creator;
     await admin.save(); // **Bu yerda saqlash ishlaydi**
 
     const admin_data = {
@@ -46,12 +61,20 @@ export class AuthService {
       email: admin.email,
     };
 
+    try {
+      await this.mailService.sendMail(admin);
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException(
+        'Aktivatsiya xatini yuborishda xatolik yuz berdi',
+      );
+    }
+
     return createApiResponse(
       201,
-      `${admin.full_name} muvaffaqiyatli qo'shildi`,
+      `${admin.email} emailga yuborilgan link orqali tasdiqlang`,
       {
         payload: admin_data,
-        access_token,
       },
     );
   }

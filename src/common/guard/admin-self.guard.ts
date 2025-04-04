@@ -41,7 +41,7 @@ export class AdminSelfGuard implements CanActivate {
     }
 
     if (payload.is_active !== true) {
-      throw new ForbiddenException('Admin is not active!');
+      throw new ForbiddenException('Admin faol emas!');
     }
 
     if (payload.id !== req.params.id && !payload.is_creator) {

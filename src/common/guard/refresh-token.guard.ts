@@ -6,6 +6,5 @@ import { AuthGuard } from '@nestjs/passport';
 export class RefreshTokenGuard extends AuthGuard('refresh-jwt') {
   constructor(private reflector: Reflector) {
     super();
-    console.log('RefreshTokenGuard IS WORKING!');
   }
 }

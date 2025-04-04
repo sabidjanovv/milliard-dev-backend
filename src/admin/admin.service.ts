@@ -52,7 +52,7 @@ export class AdminService {
     return { access_token, refresh_token };
   }
 
-  async create(createAdminDto: CreateAdminDto, adminId: string) {
+  async create(createAdminDto: CreateAdminDto) {
     const { email, phone_number, password } = createAdminDto;
 
     const existsAdmin = await this.adminModel.findOne({
