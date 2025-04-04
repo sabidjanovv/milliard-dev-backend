@@ -33,11 +33,13 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "moment-timezone": "^0.5.48",
+    "nestjs-telegraf": "^2.8.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "telegraf": "^4.16.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
