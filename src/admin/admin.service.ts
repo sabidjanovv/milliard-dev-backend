@@ -21,7 +21,7 @@ import { createApiResponse } from '../common/utils/api-response';
 @ApiTags('Admin')
 @Injectable()
 export class AdminService {
-  private isCreatorChecked = false; // Yangi o'zgaruvchi: is_creator maydoni tekshirilganligini belgilash
+  private isCreatorChecked = false;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -29,7 +29,6 @@ export class AdminService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
   ) {}
 
-  // Tokenlarni yaratish
   async generateTokens(admin: Admin) {
     const payload: JwtPayload = {
       id: admin._id,
@@ -44,7 +43,6 @@ export class AdminService {
         secret: process.env.ACCESS_TOKEN_KEY,
         expiresIn: process.env.ACCESS_TOKEN_TIME,
       }),
-
       this.jwtService.signAsync(payload, {
         secret: process.env.REFRESH_TOKEN_KEY,
         expiresIn: process.env.REFRESH_TOKEN_TIME,
@@ -54,68 +52,58 @@ export class AdminService {
     return { access_token, refresh_token };
   }
 
-  // Admin yaratish
   async create(createAdminDto: CreateAdminDto, adminId: string) {
     const { email, phone_number, password } = createAdminDto;
 
-    // Admin mavjudligini tekshirish
-    const existsAdmin = await this.adminModel
-      .findOne({
-        $or: [{ email }, { phone_number }],
-      })
-      .exec();
+    const existsAdmin = await this.adminModel.findOne({
+      $or: [{ email }, { phone_number }],
+    });
 
     if (existsAdmin) {
       throw new BadRequestException('Bunday email yoki telefon raqami mavjud!');
     }
 
-    // Parolni hash qilish
     const hashedPassword = await hash(password);
 
     let is_creator = false;
 
-    // is_creator faqat bitta admin bo'lishi mumkin, shu sababli tekshirishni faqat bir marta amalga oshiramiz
     if (!this.isCreatorChecked) {
-      const creatorAdmin = await this.adminModel
-        .findOne({ is_creator: true })
-        .exec();
-      is_creator = creatorAdmin ? false : true; // Agar is_creator: true bo'lgan admin mavjud bo'lsa, yangi adminni false qilamiz
-      this.isCreatorChecked = true; // Tekshiruvni faollashtirish
+      const creatorAdmin = await this.adminModel.findOne({ is_creator: true });
+      is_creator = !creatorAdmin;
+      this.isCreatorChecked = true;
     }
 
     const activation_link = uuid.v4();
-    // Adminni yaratish
     const newAdmin = new this.adminModel({
       ...createAdminDto,
-      hashed_password: hashedPassword, // Parolni saqlash
-      is_creator: is_creator, // is_creator maydonini avtomatik ravishda sozlash
+      hashed_password: hashedPassword,
+      is_creator,
       activation_link,
     });
 
-    await newAdmin.save(); // Adminni saqlash
+    await newAdmin.save();
 
     try {
       await this.mailService.sendMail(newAdmin);
     } catch (error) {
       console.log(error);
-      throw new BadRequestException('Error sending activation email');
+      throw new BadRequestException(
+        'Aktivatsiya xatini yuborishda xatolik yuz berdi',
+      );
     }
 
-    // Token yaratish
     const { refresh_token } = await this.generateTokens(newAdmin);
     newAdmin.hashed_refresh_token = await hash(refresh_token);
 
-    await newAdmin.save(); // Refresh tokenni yangilab saqlash
-    return createApiResponse(200, 'Админ успешно создан', newAdmin);
+    await newAdmin.save();
+    return createApiResponse(200, 'Admin muvaffaqiyatli yaratildi', newAdmin);
   }
 
-  // Barcha adminlarni olish
   async findAll(paginationDto: PaginationDto, adminId: string) {
-    const limit = Number(paginationDto.limit ?? 10); // Ensuring limit is a number
-    const page = Number(paginationDto.page ?? 1); // Ensuring page is a number
+    const limit = Number(paginationDto.limit ?? 10);
+    const page = Number(paginationDto.page ?? 1);
     const { email, phone_number, fromDate, toDate } = paginationDto;
 
-    // Filtr uchun obyekt yaratish
     const filter: any = {};
     if (email) filter.email = { $regex: email, $options: 'i' };
     if (phone_number)
@@ -124,34 +112,34 @@ export class AdminService {
     if (fromDate || toDate) {
       if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
         throw new BadRequestException(
-          'Invalid fromDate format. Use YYYY-MM-DD',
+          'fromDate formati noto‘g‘ri. YYYY-MM-DD formatida bo‘lishi kerak',
         );
       }
       if (toDate && !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
-        throw new BadRequestException('Invalid toDate format. Use YYYY-MM-DD');
+        throw new BadRequestException(
+          'toDate formati noto‘g‘ri. YYYY-MM-DD formatida bo‘lishi kerak',
+        );
       }
 
-      filter.created_at = {};
-      if (fromDate) filter.created_at.$gte = `${fromDate} 00:00:00`;
-      if (toDate) filter.created_at.$lte = `${toDate} 23:59:59`;
+      filter.createdAt = {};
+      if (fromDate) filter.createdAt.$gte = `${fromDate} 00:00:00`;
+      if (toDate) filter.createdAt.$lte = `${toDate} 23:59:59`;
     }
 
-    // Paginatsiya va filtrni qo'llash
     const [admins, totalCount] = await Promise.all([
       this.adminModel
         .find(filter)
         .sort({ _id: 'desc' })
         .limit(limit)
-        .skip((page - 1) * limit)
-        .exec(),
-
-      this.adminModel.countDocuments(filter).exec(), // Umumiy countni olish
+        .skip((page - 1) * limit),
+      this.adminModel.countDocuments(filter),
     ]);
 
-    // Adminni userId ga mos kelmasligini tekshirish
-    const filteredAdmins = admins.filter((u) => u._id.toString() !== adminId);
+    const filteredAdmins = admins.filter(
+      (admin) => admin._id.toString() !== adminId,
+    );
 
-    return createApiResponse(200, 'Админы получены успешно', {
+    return createApiResponse(200, 'Adminlar muvaffaqiyatli olindi', {
       payload: filteredAdmins,
       total: totalCount,
       limit,
@@ -159,65 +147,73 @@ export class AdminService {
     });
   }
 
-  // Bir adminni topish
   async findOne(id: string) {
-    const admin = await this.adminModel.findById(id).exec(); // Await the promise to resolve
+    const admin = await this.adminModel.findById(id);
 
     if (!admin) {
-      throw new NotFoundException('Админ с таким ID не найден');
+      throw new NotFoundException('Admin topilmadi');
     }
 
-    return createApiResponse(200, 'Админ найден', admin); // Return the found admin
+    return createApiResponse(200, 'Admin topildi', admin);
   }
 
-  // Adminni yangilash
   async update(id: string, updateAdminDto: UpdateAdminDto) {
-    const admin = await this.findOne(id);
+    const admin = await this.adminModel.findById(id);
 
     if (!admin) {
-      throw new BadRequestException('Админ не найден');
+      throw new BadRequestException('Admin topilmadi');
     }
 
-    // Adminni yangilash
-    return this.adminModel
-      .findByIdAndUpdate(id, updateAdminDto, { new: true })
-      .exec();
+    const updatedAdmin = await this.adminModel.findByIdAndUpdate(
+      id,
+      updateAdminDto,
+      {
+        new: true,
+      },
+    );
+
+    return createApiResponse(
+      200,
+      'Admin muvaffaqiyatli yangilandi',
+      updatedAdmin,
+    );
   }
 
-  // Adminni o'chirish
   async remove(id: string) {
-    const admin = await this.findOne(id);
+    const admin = await this.adminModel.findById(id);
 
     if (!admin) {
-      throw new BadRequestException('Админ не найден');
+      throw new BadRequestException('Admin topilmadi');
     }
 
-    await this.adminModel.findByIdAndDelete(id).exec();
-    return createApiResponse(200, 'Админ успешно удален', null);
+    await this.adminModel.findByIdAndDelete(id);
+    return createApiResponse(200, 'Admin muvaffaqiyatli o‘chirildi', null);
   }
 
   async activateAdmin(link: string, res: Response) {
     try {
       const admin = await this.adminModel.findOne({ activation_link: link });
+
       if (!admin) {
-        return res.status(400).send({ message: 'Пользователь не найден!' });
+        return res.status(400).send({ message: 'Admin topilmadi!' });
       }
 
       if (admin.is_active) {
         return res
           .status(400)
-          .send({ message: 'Пользователь уже активирован.' });
+          .send({ message: 'Admin allaqachon aktivlashtirilgan.' });
       }
 
       admin.is_active = true;
       await admin.save();
 
-      res.send({
+      return res.send({
         is_active: admin.is_active,
-        message: 'Пользователь успешно активирован.',
+        message: 'Admin muvaffaqiyatli aktivlashtirildi.',
       });
     } catch (error) {
-      // console.log(error);
+      console.log(error);
+      return res.status(500).send({ message: 'Serverda xatolik yuz berdi' });
     }
   }
 }

@@ -10,7 +10,7 @@ export class Bot {
   @Prop({ unique: true })
   user_id: string;
 
-  @Prop({ unique: true })
+  @Prop({ unique: true, required: false })
   phone_number: string;
 
   @Prop({ required: false })
@@ -27,3 +27,12 @@ export class Bot {
 }
 
 export const BotSchema = SchemaFactory.createForClass(Bot);
+BotSchema.index(
+  { phone_number: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      phone_number: { $exists: true, $gt: '' },
+    },
+  },
+);

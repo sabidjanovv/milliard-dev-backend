@@ -5,7 +5,6 @@ import { AdminModule } from './admin/admin.module';
 import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
 import { AddressModule } from './address/address.module';
-import { DeveloperModule } from './developer/developer.module';
 import { ProjectModule } from './project/project.module';
 import { CustomerModule } from './customer/customer.module';
 import { TelegrafModule } from 'nestjs-telegraf';
@@ -35,7 +34,6 @@ import { BotModule } from './bot/bot.module';
     MailModule,
     AuthModule,
     AddressModule,
-    DeveloperModule,
     ProjectModule,
     CustomerModule,
     BotModule,

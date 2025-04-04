@@ -18,8 +18,11 @@ export class Project {
   @Prop({ type: String, required: false, default: null })
   image?: string;
 
-  @Prop({ type: String, ref: 'Developer', required: true })
-  developerId: string;
+  @Prop({ type: String, ref: 'Admin', required: true })
+  adminId: string;
+
+  @Prop({ type: String, ref: 'Admin', required: false, default: null })
+  updaterAdminId: string;
 
   @Prop({ type: String })
   createdAt: string;

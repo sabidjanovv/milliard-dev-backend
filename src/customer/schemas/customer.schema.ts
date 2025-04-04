@@ -39,6 +39,26 @@ export class Customer {
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);
 
+CustomerSchema.index(
+  { phone_number: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      phone_number: { $exists: true, $gt: '' },
+    },
+  },
+);
+
+CustomerSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      email: { $exists: true, $gt: '' },
+    },
+  },
+);
+
 CustomerSchema.pre('save', function (next) {
   if (!this.createdAt) {
     this.set({
