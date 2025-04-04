@@ -6,6 +6,8 @@ import {
   Param,
   Delete,
   Patch,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { CreateAddressDto } from './dto/create-address.dto';
@@ -15,70 +17,93 @@ import {
   ApiResponse,
   ApiTags,
   ApiParam,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { AdminGuard } from '../common/guard/admin.guard';
+import { AuthGuard } from '@nestjs/passport';
 
-@ApiTags('Addresses') // Yangi manzillar uchun API
+@ApiTags('Addresses')
 @Controller('addresses')
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
-  // Create a new address
   @Post()
-  @ApiOperation({ summary: 'Создание нового адреса' })
-  @ApiResponse({ status: 201, description: 'Адрес успешно создан' })
-  @ApiResponse({ status: 400, description: 'Некорректный запрос' })
-  async create(@Body() createAddressDto: CreateAddressDto) {
-    return this.addressService.create(createAddressDto);
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Yangi manzil yaratish' })
+  @ApiResponse({
+    status: 201,
+    description: '✅ Manzil muvaffaqiyatli yaratildi',
+  })
+  @ApiResponse({ status: 400, description: '❌ Noto‘g‘ri so‘rov' })
+  @ApiResponse({ status: 403, description: '❌ Faqat adminlar uchun ruxsat' })
+  async create(@Body() createAddressDto: CreateAddressDto, @Request() req) {
+    const adminId = req.user.id;
+    return this.addressService.create(createAddressDto, adminId);
   }
 
-  // Get all addresses
   @Get()
-  @ApiOperation({ summary: 'Получить все адреса' })
-  @ApiResponse({ status: 200, description: 'Все адреса успешно получены' })
-  @ApiResponse({ status: 404, description: 'Адреса не найдены' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Barcha manzillarni olish' })
+  @ApiResponse({
+    status: 200,
+    description: '✅ Manzillar muvaffaqiyatli olindi',
+  })
+  @ApiResponse({ status: 403, description: '❌ Faqat adminlar uchun ruxsat' })
   async findAll() {
     return this.addressService.findAll();
   }
 
-  // Get a single address by ID
   @Get(':id')
-  @ApiOperation({ summary: 'Получить адрес по ID' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ID bo‘yicha manzilni olish' })
   @ApiParam({
     name: 'id',
-    description: 'ID адреса',
-    example: '60b7c3e8f1a7e564c6d1c2f1', // Example of a valid address ID
+    description: 'Manzilning ID raqami',
+    example: '660b7c3e8f1a7e564c6d1c2f1',
   })
-  @ApiResponse({ status: 200, description: 'Адрес найден' })
-  @ApiResponse({ status: 404, description: 'Адрес с таким ID не найден' })
+  @ApiResponse({ status: 200, description: '✅ Manzil topildi' })
+  @ApiResponse({ status: 404, description: '❌ Manzil topilmadi' })
+  @ApiResponse({ status: 403, description: '❌ Faqat adminlar uchun ruxsat' })
   async findOne(@Param('id') id: string) {
     return this.addressService.findOne(id);
   }
 
-  // Update an existing address by ID
   @Patch(':id')
-  @ApiOperation({ summary: 'Обновить адрес по ID' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ID bo‘yicha manzilni yangilash' })
   @ApiParam({
     name: 'id',
-    description: 'ID адреса для обновления',
+    description: 'Yangilanishi kerak bo‘lgan manzil IDsi',
+    example: '660b7c3e8f1a7e564c6d1c2f1',
   })
-  @ApiResponse({ status: 200, description: 'Адрес успешно обновлен' })
-  @ApiResponse({ status: 404, description: 'Адрес с таким ID не найден' })
+  @ApiResponse({ status: 200, description: '✅ Manzil yangilandi' })
+  @ApiResponse({ status: 404, description: '❌ Manzil topilmadi' })
+  @ApiResponse({ status: 403, description: '❌ Faqat adminlar uchun ruxsat' })
   async update(
     @Param('id') id: string,
     @Body() updateAddressDto: UpdateAddressDto,
+    @Request() req, // Updater admin ID
   ) {
-    return this.addressService.update(id, updateAddressDto);
+    const updaterAdminId = req.user.id;
+    return this.addressService.update(id, updateAddressDto, updaterAdminId);
   }
 
-  // Delete an address by ID
   @Delete(':id')
-  @ApiOperation({ summary: 'Удалить адрес по ID' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ID bo‘yicha manzilni o‘chirish' })
   @ApiParam({
     name: 'id',
-    description: 'ID адреса для удаления',
+    description: 'O‘chiriladigan manzil IDsi',
+    example: '660b7c3e8f1a7e564c6d1c2f1',
   })
-  @ApiResponse({ status: 200, description: 'Адрес успешно удален' })
-  @ApiResponse({ status: 404, description: 'Адрес с таким ID не найден' })
+  @ApiResponse({ status: 200, description: '✅ Manzil o‘chirildi' })
+  @ApiResponse({ status: 404, description: '❌ Manzil topilmadi' })
+  @ApiResponse({ status: 403, description: '❌ Faqat adminlar uchun ruxsat' })
   async remove(@Param('id') id: string) {
     return this.addressService.remove(id);
   }

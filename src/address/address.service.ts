@@ -7,7 +7,6 @@ import { UpdateAddressDto } from './dto/update-address.dto';
 import { ApiResponse } from '../common/types/api-response.type';
 import { createApiResponse } from '../common/utils/api-response';
 
-// Service metodlarida 'Promise'ni ishlatish yoki 'async/await'ni qo'llash zarur
 @Injectable()
 export class AddressService {
   constructor(
@@ -15,58 +14,79 @@ export class AddressService {
     private readonly addressModel: Model<AddressDocument>,
   ) {}
 
-  // Create a new address
+  // ✅ Yangi manzil yaratish
   async create(
     createAddressDto: CreateAddressDto,
+    adminId: string,
   ): Promise<ApiResponse<Address>> {
-    const createdAddress = new this.addressModel(createAddressDto);
-    await createdAddress.save();
-
-    return createApiResponse(201, 'Адрес успешно создан', createdAddress); // Return created address
+    const newAddress = await this.addressModel.create(createAddressDto);
+    return createApiResponse(
+      201,
+      'Manzil muvaffaqiyatli yaratildi',
+      newAddress,
+    );
   }
 
-  // Get all addresses
+  // ✅ Barcha manzillar ro‘yxatini olish
   async findAll(): Promise<ApiResponse<Address[]>> {
-    const addresses = await this.addressModel.find().exec(); // Await the promise to resolve
-
-    return createApiResponse(200, 'Все адреса получены успешно', addresses); // Return addresses
+    const addresses = await this.addressModel.find().exec();
+    return createApiResponse(
+      200,
+      'Barcha manzillar muvaffaqiyatli olindi',
+      addresses,
+    );
   }
 
-  // Get a single address by ID
+  // ✅ ID bo‘yicha manzilni olish
   async findOne(id: string): Promise<ApiResponse<Address>> {
-    const address = await this.addressModel.findById(id).exec(); // Await the promise to resolve
+    const address = await this.addressModel.findById(id).exec();
 
     if (!address) {
-      throw new NotFoundException('Адрес с таким ID не найден');
+      throw new NotFoundException('Bunday IDga ega manzil topilmadi');
     }
 
-    return createApiResponse(200, 'Адрес найден', address); // Return the found address
+    return createApiResponse(200, 'Manzil topildi', address);
   }
 
-  // Update an existing address by ID
+  // ✅ ID bo‘yicha manzilni yangilash
   async update(
     id: string,
     updateAddressDto: UpdateAddressDto,
+    updaterAdminId: string, // Updater admin ID
   ): Promise<ApiResponse<Address>> {
+    // Yangilashda updaterAdminIdni manzilga qo'shish
     const updatedAddress = await this.addressModel
-      .findByIdAndUpdate(id, updateAddressDto, { new: true })
-      .exec(); // Await the promise to resolve
+      .findByIdAndUpdate(
+        id,
+        {
+          ...updateAddressDto,
+          updaterAdminId, // yangi admin IDni qo'shish
+        },
+        { new: true },
+      )
+      .exec();
 
     if (!updatedAddress) {
-      throw new NotFoundException('Адрес с таким ID не найден');
+      throw new NotFoundException(
+        'Yangilanishi kerak bo‘lgan manzil topilmadi',
+      );
     }
 
-    return createApiResponse(200, 'Адрес обновлен успешно', updatedAddress); // Return updated address
+    return createApiResponse(
+      200,
+      'Manzil muvaffaqiyatli yangilandi',
+      updatedAddress,
+    );
   }
 
-  // Delete an address by ID
+  // ✅ ID bo‘yicha manzilni o‘chirish
   async remove(id: string): Promise<ApiResponse<null>> {
-    const deletedAddress = await this.addressModel.findByIdAndDelete(id).exec(); // Await the promise to resolve
+    const deletedAddress = await this.addressModel.findByIdAndDelete(id).exec();
 
     if (!deletedAddress) {
-      throw new NotFoundException('Адрес с таким ID не найден');
+      throw new NotFoundException('O‘chiriladigan manzil topilmadi');
     }
 
-    return createApiResponse(200, 'Адрес удален успешно', null); // Return null as the payload
+    return createApiResponse(200, 'Manzil muvaffaqiyatli o‘chirildi', null);
   }
 }

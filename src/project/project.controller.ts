@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -21,9 +22,11 @@ import {
   ApiConsumes,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import * as path from 'path';
 import * as fs from 'fs';  // fs modulini import qilish
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -70,8 +73,28 @@ export class ProjectController {
 
   @Get()
   @ApiOperation({ summary: 'Получить список всех проектов' })
-  async findAll() {
-    return this.projectService.findAll();
+  @ApiQuery({
+    name: 'fromDate',
+    required: false,
+    description: 'Filter washings from this date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'toDate',
+    required: false,
+    description: 'Filter washings up to this date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of items per page (default: 20)',
+  })
+  async findAll(@Query() paginationDto: PaginationDto) {
+    return this.projectService.findAll(paginationDto);
   }
 
   @Get(':id')
@@ -117,8 +140,8 @@ export class ProjectController {
     }
 
     // If an image exists, remove the old one
-    if (existingProject.data?.image) {
-      const oldImagePath = `./uploads/${existingProject.data.image}`;
+    if (existingProject.data?.payload.image) {
+      const oldImagePath = `./uploads/${existingProject.data.payload.image}`;
       if (fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath); // Eski rasmini o'chirish
       } else {
@@ -131,7 +154,7 @@ export class ProjectController {
       updateProjectDto['image'] = file.filename; // Save the file name, not the full path
     } else {
       // Keep the old image if no new image is uploaded
-      updateProjectDto['image'] = existingProject.data?.image;
+      updateProjectDto['image'] = existingProject.data?.payload.image;
     }
 
     return this.projectService.update(id, updateProjectDto); // Pass to service for updating
