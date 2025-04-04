@@ -4,7 +4,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class SignInDto {
   @ApiProperty({
     example: 'example@gmail.com',
-    description: 'The email of the user',
+    description: 'Foydalanuvchining elektron pochtasi',
   })
   @IsString()
   @IsNotEmpty()
@@ -12,7 +12,7 @@ export class SignInDto {
 
   @ApiProperty({
     example: 'p@ssw0rd',
-    description: 'The user password',
+    description: 'Foydalanuvchi paroli',
   })
   @IsString()
   @IsNotEmpty()

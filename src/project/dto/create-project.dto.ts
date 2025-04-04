@@ -2,39 +2,31 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
 
 export class CreateProjectDto {
-  @ApiProperty({ example: 'Awesome Project', description: 'Название проекта' })
-  @IsNotEmpty({ message: 'Название проекта обязательно' })
-  @IsString({ message: 'Название должно быть строкой' })
+  @ApiProperty({ example: 'Ajoyib Loyihalar', description: 'Loyiha nomi' })
+  @IsNotEmpty({ message: 'Loyiha nomi majburiy' })
+  @IsString({ message: "Loyiha nomi satr bo'lishi kerak" })
   name: string;
 
   @ApiProperty({
-    example: 'Это очень крутой проект',
-    description: 'Описание проекта',
+    example: 'Bu juda ajoyib loyiha',
+    description: 'Loyihaning tavsifi',
   })
-  @IsNotEmpty({ message: 'Описание проекта обязательно' })
-  @IsString({ message: 'Описание должно быть строкой' })
+  @IsNotEmpty({ message: 'Loyihaning tavsifi majburiy' })
+  @IsString({ message: "Tavsif satr bo'lishi kerak" })
   description: string;
 
   @ApiProperty({
     example: 'https://github.com/awesome-project',
-    description: 'Ссылка на проект',
+    description: 'Loyiha havolasi',
   })
-  @IsNotEmpty({ message: 'Ссылка на проект обязательна' })
-  @IsUrl({}, { message: 'Ссылка должна быть корректным URL' })
+  @IsNotEmpty({ message: 'Loyiha havolasi majburiy' })
+  @IsUrl({}, { message: "Havola to'g'ri URL formatida bo'lishi kerak" })
   link: string;
 
   @ApiProperty({
-    description: 'Изображение проекта',
+    description: 'Loyihaning rasmi',
     type: 'string',
     format: 'binary', // Swagger-specific to indicate a file upload
   })
   image?: string;
-
-  @ApiProperty({
-    example: '64e3f1a8d3a8b3f4f5e7c4d1',
-    description: 'ID разработчика',
-  })
-  @IsNotEmpty({ message: 'ID разработчика обязателен' })
-  @IsString({ message: 'ID разработчика должен быть строкой' })
-  developerId: string;
 }

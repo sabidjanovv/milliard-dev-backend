@@ -17,15 +17,20 @@ export class ProjectService {
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
   ) {}
 
-  async create(createProjectDto: CreateProjectDto, file?: Express.Multer.File) {
+  async create(
+    createProjectDto: CreateProjectDto,
+    adminId: string,
+    file?: Express.Multer.File,
+  ) {
     if (file) {
-      createProjectDto['image'] = `/uploads/${file.filename}`;
+      createProjectDto['image'] = file.filename; // Faylni saqlash
     }
 
     const project = new this.projectModel(createProjectDto);
-    await project.save();
+    project.adminId = adminId; // Admin ID ni saqlash
+    await project.save(); // Loyiha saqlash
 
-    return createApiResponse(201, 'Проект успешно создан', {
+    return createApiResponse(201, 'Proyekt muvaffaqiyatli yaratildi', {
       payload: project,
     });
   }
@@ -40,11 +45,13 @@ export class ProjectService {
     if (fromDate || toDate) {
       if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
         throw new BadRequestException(
-          'Invalid fromDate format. Use YYYY-MM-DD',
+          'fromDate format xato. Iltimos YYYY-MM-DD shaklida kiriting',
         );
       }
       if (toDate && !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
-        throw new BadRequestException('Invalid toDate format. Use YYYY-MM-DD');
+        throw new BadRequestException(
+          'toDate format xato. Iltimos YYYY-MM-DD shaklida kiriting',
+        );
       }
 
       filter.createdAt = {};
@@ -59,7 +66,7 @@ export class ProjectService {
       .skip((page - 1) * limit)
       .exec();
 
-    return createApiResponse(200, 'Список проектов', {
+    return createApiResponse(200, "Barcha proyektlar ro'yxati", {
       payload: projects,
       total: totalCount,
       limit,
@@ -70,23 +77,26 @@ export class ProjectService {
   async findOne(id: string) {
     const project = await this.projectModel.findById(id).exec();
     if (!project) {
-      throw new NotFoundException('Проект с таким ID не найден');
+      throw new NotFoundException("Berilgan ID bo'yicha proyekt topilmadi");
     }
-    return createApiResponse(200, 'Проект найден', {
+    return createApiResponse(200, 'Proyekt topildi', {
       payload: project,
     });
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto) {
+  async update(id: string, updateProjectDto: UpdateProjectDto, adminId: string) {
     const updatedProject = await this.projectModel
       .findByIdAndUpdate(id, updateProjectDto, { new: true })
       .exec();
 
     if (!updatedProject) {
-      throw new NotFoundException('Проект с таким ID не найден');
+      throw new NotFoundException("Berilgan ID bo'yicha proyekt topilmadi");
     }
 
-    return createApiResponse(200, 'Проект успешно обновлен', {
+    updatedProject.updaterAdminId = adminId;
+    updatedProject.save();
+
+    return createApiResponse(200, 'Proyekt muvaffaqiyatli yangilandi', {
       payload: updatedProject,
     });
   }
@@ -94,9 +104,9 @@ export class ProjectService {
   async remove(id: string) {
     const deletedProject = await this.projectModel.findByIdAndDelete(id).exec();
     if (!deletedProject) {
-      throw new NotFoundException('Проект с таким ID не найден');
+      throw new NotFoundException("Berilgan ID bo'yicha proyekt topilmadi");
     }
-    return createApiResponse(200, 'Проект успешно удален', {
+    return createApiResponse(200, "Proyekt muvaffaqiyatli o'chirildi", {
       payload: deletedProject, // yoki agar hech narsa qaytarilmasa: payload: null
     });
   }

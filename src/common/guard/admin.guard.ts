@@ -41,7 +41,7 @@ export class AdminGuard implements CanActivate {
     }
 
     if (payload.is_active !== true) {
-      throw new ForbiddenException('Admin is not active!');
+      throw new ForbiddenException('Admin faol emas!');
     }
 
     return true;

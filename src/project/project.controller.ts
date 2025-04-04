@@ -10,6 +10,8 @@ import {
   UploadedFile,
   NotFoundException,
   Query,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -23,10 +25,13 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import * as path from 'path';
-import * as fs from 'fs';  // fs modulini import qilish
+import * as fs from 'fs'; // fs modulini import qilish
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from '../common/guard/admin.guard';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -34,7 +39,9 @@ export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Создать проект' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard) // JWT autentifikatsiyasi
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Loyiha yaratish' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -51,77 +58,81 @@ export class ProjectController {
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: './uploads', // Upload folder
+        destination: './uploads', // Yuklash papkasi
         filename: (req, file, callback) => {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = path.extname(file.originalname); // Get file extension
-          callback(null, `${uniqueSuffix}${ext}`); // Unique file name
+          const ext = path.extname(file.originalname); // Fayl kengaytmasini olish
+          callback(null, `${uniqueSuffix}${ext}`); // Yagona fayl nomini saqlash
         },
       }),
     }),
   )
   async create(
     @Body() createProjectDto: CreateProjectDto,
+    @Request() req,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (file) {
-      createProjectDto.image = file.filename; // Store file name in DTO
+      createProjectDto.image = file.filename; // Fayl nomini DTOga saqlash
     }
-    return this.projectService.create(createProjectDto); // Pass to service
+    const adminId = req.user.id; // Admin IDni olish
+    return this.projectService.create(createProjectDto, adminId, file); // Admin ID bilan loyihani yaratish
   }
 
   @Get()
-  @ApiOperation({ summary: 'Получить список всех проектов' })
+  @ApiOperation({ summary: 'Barcha loyihalarni olish' })
   @ApiQuery({
     name: 'fromDate',
     required: false,
-    description: 'Filter washings from this date (YYYY-MM-DD)',
+    description: 'Bu sanadan boshlab loyihalarni filtrlash (YYYY-MM-DD)',
   })
   @ApiQuery({
     name: 'toDate',
     required: false,
-    description: 'Filter washings up to this date (YYYY-MM-DD)',
+    description: 'Bu sanagacha loyihalarni filtrlash (YYYY-MM-DD)',
   })
   @ApiQuery({
     name: 'page',
     required: false,
-    description: 'Page number (default: 1)',
+    description: 'Sahifa raqami (default: 1)',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Number of items per page (default: 20)',
+    description: 'Sahifadagi elementlar soni (default: 20)',
   })
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.projectService.findAll(paginationDto);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Получить проект по ID' })
+  @ApiOperation({ summary: 'ID bo‘yicha loyihani olish' })
   @ApiParam({ name: 'id', type: 'string' })
   async findOne(@Param('id') id: string) {
     return this.projectService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Обновить проект по ID' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard) // JWT autentifikatsiyasi
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ID bo‘yicha loyihani yangilash' })
   @ApiParam({ name: 'id', type: 'string' })
-  @ApiConsumes('multipart/form-data') // Important for handling form data (including files)
+  @ApiConsumes('multipart/form-data') // Form ma’lumotlarini (shu jumladan fayllar) boshqarish uchun muhim
   @ApiBody({
-    description: 'Обновить проект с изображением',
+    description: "Loyihani yangilash va rasm qo'shish",
     type: UpdateProjectDto,
-    required: false, // image is optional
+    required: false, // Rasm ixtiyoriy
   })
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: './uploads', // Upload folder
+        destination: './uploads', // Yuklash papkasi
         filename: (req, file, callback) => {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = path.extname(file.originalname); // Get file extension
-          callback(null, `${uniqueSuffix}${ext}`); // Save only the file name
+          const ext = path.extname(file.originalname); // Fayl kengaytmasini olish
+          callback(null, `${uniqueSuffix}${ext}`); // Yagona fayl nomini saqlash
         },
       }),
     }),
@@ -129,39 +140,44 @@ export class ProjectController {
   async update(
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
+    @Request() req,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    // Fetch the existing project
+    // Mavjud loyihani olish
     const existingProject = await this.projectService.findOne(id);
 
-    // If the project is not found, throw an exception
+    // Loyihaning mavjud emasligini tekshirish
     if (!existingProject) {
-      throw new NotFoundException('Проект с таким ID не найден');
+      throw new NotFoundException('Bunday IDga ega loyiha topilmadi');
     }
 
-    // If an image exists, remove the old one
+    // Agar eski rasm bo‘lsa, uni o‘chirish
     if (existingProject.data?.payload.image) {
       const oldImagePath = `./uploads/${existingProject.data.payload.image}`;
       if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath); // Eski rasmini o'chirish
+        fs.unlinkSync(oldImagePath); // Eski rasmini o‘chirish
       } else {
         console.log('Fayl topilmadi:', oldImagePath);
       }
     }
 
-    // If a new image is uploaded, save the new image
+    // Yangi rasm yuklangan bo‘lsa, uni saqlash
     if (file) {
-      updateProjectDto['image'] = file.filename; // Save the file name, not the full path
+      updateProjectDto['image'] = file.filename; // Faqat fayl nomini saqlash
     } else {
-      // Keep the old image if no new image is uploaded
+      // Yangi rasm yuklanmasa, eski rasmani saqlash
       updateProjectDto['image'] = existingProject.data?.payload.image;
     }
+    // Admin IDni olish
+    const adminId = req.user.id; // Admin IDni olish
 
-    return this.projectService.update(id, updateProjectDto); // Pass to service for updating
+    return this.projectService.update(id, updateProjectDto, adminId); // Yangilash uchun servisga yuborish
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Удалить проект по ID' })
+  @UseGuards(AuthGuard('jwt'), AdminGuard) // JWT autentifikatsiyasi
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ID bo‘yicha loyihani o‘chirish' })
   @ApiParam({ name: 'id', type: 'string' })
   async remove(@Param('id') id: string) {
     return this.projectService.remove(id);

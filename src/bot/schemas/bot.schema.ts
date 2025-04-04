@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type BotDocument = Bot & Document;
-@Schema({ versionKey: false })
+@Schema({ versionKey: false, timestamps: false })
 export class Bot {
   @Prop({ unique: true })
   username: string;
