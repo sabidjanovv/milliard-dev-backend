@@ -80,7 +80,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(RefreshTokenGuard)
   async refreshTokens(@Req() req: Request) {
-    console.log('REFRESH TOKEN REQUEST:', req.user);
+    // console.log('REFRESH TOKEN REQUEST:', req.user);
     return this.authService.refreshTokens(req);
   }
 
