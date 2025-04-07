@@ -15,6 +15,7 @@ import { SignInDto } from './dto/signin.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request } from 'express';
+import '../common/types/request.types';
 import { AdminService } from '../admin/admin.service';
 import { Admin, AdminDocument } from '../admin/schemas/admin.schema';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
@@ -146,11 +147,11 @@ export class AuthService {
   }
 
   async refreshTokens(req: Request) {
-    const adminPayload = req.user as JwtPayload;
-    console.log('PAYLOAD:', adminPayload);
+    const adminPayload = req?.user as JwtPayload; 
+    // console.log('PAYLOAD:', adminPayload); 
 
     if (!adminPayload.id) {
-      throw new ForbiddenException('Foydalanuvchi ID-si noto‘g‘ri');
+      throw new ForbiddenException("Foydalanuvchi ID-si noto'g'ri");
     }
 
     const admin = await this.adminModel.findById(adminPayload.id);
@@ -168,7 +169,7 @@ export class AuthService {
     );
 
     if (!isMatch) {
-      throw new ForbiddenException('Noto‘g‘ri yangilash tokeni');
+      throw new ForbiddenException("Noto'g'ri yangilash tokeni");
     }
 
     const { access_token, refresh_token: newRefreshToken } =
@@ -195,7 +196,7 @@ export class AuthService {
       });
 
       if (!verified_token) {
-        throw new UnauthorizedException('Berilgan token noto‘g‘ri');
+        throw new UnauthorizedException("Berilgan token noto'g'ri");
       }
 
       const user = await this.adminModel.findById(verified_token.id);
@@ -222,7 +223,7 @@ export class AuthService {
       if (error.name === 'TokenExpiredError') {
         throw new UnauthorizedException('Token muddati tugagan');
       } else if (error.name === 'JsonWebTokenError') {
-        throw new UnauthorizedException('Token imzosi noto‘g‘ri');
+        throw new UnauthorizedException("Token imzosi noto'g'ri");
       } else {
         throw new UnauthorizedException(
           'Autentifikatsiya muvaffaqiyatsiz tugadi',
